@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: lp-stag-service
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    #type: LoadBalancer
+  selector:
+    app: lp-stag
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lp-stag-deployment
+  labels:
+    app: lp-stag
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lp-stag
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: lp-stag
+        track: stable
+    spec:
+      containers:
+      - name: lp-stag
+        image: renardarv/landing-page:buildnumber 
+        ports:
+        - containerPort: 80
+      restartPolicy: Always
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: lp-stag-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: lp-stag.renard.my.id
+    http:
+      paths:
+      #- path: /
+      - backend:
+          serviceName: lp-stag-service
+          servicePort: 80
